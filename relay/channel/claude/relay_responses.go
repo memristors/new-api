@@ -21,7 +21,7 @@ func ClaudeResponsesStreamHandler(c *gin.Context, resp *http.Response, info *rel
 	created := common.GetTimestamp()
 	state, err := relayconvert.NewResponseStreamState(types.RelayFormatClaude, types.RelayFormatOpenAIResponses, relayconvert.ResponseStreamOptions{
 		ID:                 responseID,
-		Model:              info.UpstreamModelName,
+		Model:              presentedModelName(info),
 		Created:            created,
 		EmitSequenceNumber: true,
 	})
@@ -33,7 +33,7 @@ func ClaudeResponsesStreamHandler(c *gin.Context, resp *http.Response, info *rel
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   responseID,
 		Created:      created,
-		Model:        info.UpstreamModelName,
+		Model:        presentedModelName(info),
 		ResponseText: strings.Builder{},
 		Usage:        &dto.Usage{},
 	}
@@ -116,8 +116,10 @@ func ClaudeResponsesStreamHandler(c *gin.Context, resp *http.Response, info *rel
 			info.StreamStatus.MarkCompleted()
 		}
 		if claudeResponse.Type == "message_start" && claudeResponse.Message != nil {
-			info.ObserveResponseModel(claudeResponse.Message.Model)
-			info.UpstreamModelName = claudeResponse.Message.Model
+			upstreamModel := claudeResponse.Message.Model
+			info.ObserveResponseModel(upstreamModel)
+			info.UpstreamModelName = upstreamModel
+			claudeResponse.Message.Model = presentedModel(info, upstreamModel)
 		}
 		FormatClaudeResponseInfo(&claudeResponse, nil, claudeInfo)
 		countClaudeStreamBillableTools(info, &claudeResponse)
