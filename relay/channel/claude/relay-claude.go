@@ -96,8 +96,13 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	if claudeError := claudeResponse.GetClaudeError(); claudeError != nil && claudeError.Type != "" {
 		return types.WithClaudeError(*claudeError, http.StatusInternalServerError)
 	}
+	// upstreamModel is what the upstream declared; the struct below is switched to the
+	// presented (requested) model so every converted format reports the same name.
+	upstreamModel := ""
 	if claudeResponse.Type == "message_start" && claudeResponse.Message != nil {
-		info.ObserveResponseModel(claudeResponse.Message.Model)
+		upstreamModel = claudeResponse.Message.Model
+		info.ObserveResponseModel(upstreamModel)
+		claudeResponse.Message.Model = presentedModel(info, upstreamModel)
 	}
 	if claudeResponse.StopReason != "" {
 		maybeMarkClaudeRefusal(c, info, claudeResponse.StopReason)
@@ -114,7 +119,10 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if claudeResponse.Type == "message_start" {
 			// message_start, 获取usage
 			if claudeResponse.Message != nil {
-				info.UpstreamModelName = claudeResponse.Message.Model
+				info.UpstreamModelName = upstreamModel
+				if claudeResponse.Message.Model != upstreamModel {
+					data = string(rewriteModelJSON([]byte(data), "message.model", claudeResponse.Message.Model))
+				}
 			}
 		} else if claudeResponse.Type == "message_delta" {
 			// 确保 message_delta 的 usage 包含完整的 input_tokens 和 cache 相关字段
@@ -288,7 +296,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		if info.ShouldIncludeUsage {
 			openAIUsage := buildOpenAIStyleUsageFromClaudeUsage(claudeInfo.Usage)
-			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, openAIUsage)
+			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, presentedModelName(info), openAIUsage)
 			err := helper.ObjectData(c, response)
 			if err != nil {
 				common.SysLog(common.LogText("send final response failed: %s", err.Error()))
@@ -316,7 +324,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   helper.GetResponseID(c),
 		Created:      common.GetTimestamp(),
-		Model:        info.UpstreamModelName,
+		Model:        presentedModelName(info),
 		ResponseText: strings.Builder{},
 		Usage:        &dto.Usage{},
 	}
@@ -346,6 +354,8 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		return types.WithClaudeError(*claudeError, http.StatusInternalServerError)
 	}
 	info.ObserveResponseModel(claudeResponse.Model)
+	upstreamModel := claudeResponse.Model
+	claudeResponse.Model = presentedModel(info, upstreamModel)
 	maybeMarkClaudeRefusal(c, info, claudeResponse.StopReason)
 	if claudeInfo.Usage == nil {
 		claudeInfo.Usage = &dto.Usage{}
@@ -391,6 +401,9 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 	case types.RelayFormatClaude:
 		responseData = data
+		if claudeResponse.Model != upstreamModel {
+			responseData = rewriteModelJSON(data, "model", claudeResponse.Model)
+		}
 	case types.RelayFormatGemini:
 		{
 			convertResult, convertErr := service.ConvertResponse(c, info, types.RelayFormatGemini, &claudeResponse)
@@ -428,7 +441,7 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   helper.GetResponseID(c),
 		Created:      common.GetTimestamp(),
-		Model:        info.UpstreamModelName,
+		Model:        presentedModelName(info),
 		ResponseText: strings.Builder{},
 		Usage:        &dto.Usage{},
 	}
