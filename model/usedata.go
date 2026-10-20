@@ -38,6 +38,38 @@ type QuotaDataLogParams struct {
 	NodeName  string
 }
 
+// quotaDataCacheTokens returns the prompt-cache tokens a usage log carries outside of
+// prompt_tokens, so the dashboard and ranking totals (sums of quota_data.token_used)
+// include them.
+//
+// Anthropic-style usage ("usage_semantic": "anthropic") reports prompt_tokens WITHOUT cache
+// reads and cache writes; for a cached Claude conversation almost all of the traffic is in
+// those two counters. OpenAI-style usage already counts cached tokens inside prompt_tokens,
+// so nothing is added there (adding it would count them twice).
+func quotaDataCacheTokens(other *LogOther) int {
+	if other == nil {
+		return 0
+	}
+	snapshot := other.Snapshot()
+	if semantic, _ := snapshot["usage_semantic"].(string); semantic != "anthropic" {
+		return 0
+	}
+	return logOtherInt(snapshot["cache_tokens"]) + logOtherInt(snapshot["cache_creation_tokens"])
+}
+
+func logOtherInt(value any) int {
+	switch v := value.(type) {
+	case int:
+		return max(v, 0)
+	case int64:
+		return max(int(v), 0)
+	case float64:
+		return max(int(v), 0)
+	default:
+		return 0
+	}
+}
+
 func UpdateQuotaData() {
 	for {
 		if common.DataExportEnabled {
