@@ -93,3 +93,23 @@ func TestFillChannelUsageBucketsAlignsTheFirstBucketToTheViewersDay(t *testing.T
 	assert.LessOrEqual(t, got[0].Bucket, r.Start)
 	assert.Greater(t, got[0].Bucket+day, r.Start, "the first bucket contains the start of the range")
 }
+
+func TestMergeChannelUsageBreakdownCombinesBothSources(t *testing.T) {
+	const h = int64(3600)
+	stats := []model.ChannelUsageBucket{
+		{Bucket: 1 * h, TokenUsed: 100, Quota: 5, Count: 2},
+		{Bucket: 2 * h, TokenUsed: 40, Quota: 1, Count: 1},
+	}
+	logs := []model.ChannelUsageBucket{
+		{Bucket: 1 * h, InputTokens: 60, OutputTokens: 10, CacheReadTokens: 30},
+		{Bucket: 3 * h, InputTokens: 4}, // only in the logs
+	}
+	got := mergeChannelUsageBreakdown(stats, logs)
+	require.Len(t, got, 3)
+	assert.Equal(t, model.ChannelUsageBucket{Bucket: 1 * h, TokenUsed: 100, Quota: 5, Count: 2, InputTokens: 60, OutputTokens: 10, CacheReadTokens: 30}, got[0])
+	assert.Equal(t, model.ChannelUsageBucket{Bucket: 2 * h, TokenUsed: 40, Quota: 1, Count: 1}, got[1], "no logs for that hour")
+	assert.Equal(t, int64(4), got[2].InputTokens)
+
+	assert.Equal(t, stats, mergeChannelUsageBreakdown(stats, nil), "without logs the statistics pass through")
+}
+

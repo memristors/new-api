@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/QuantumNous/new-api/common"
 )
@@ -14,6 +15,15 @@ type ChannelUsageBucket struct {
 	TokenUsed int64 `json:"token_used"`
 	Quota     int64 `json:"quota"`
 	Count     int64 `json:"count"`
+
+	// The breakdown comes from the usage logs, not from quota_data, so it is zero for
+	// periods whose logs were purged. For every request
+	// input + output + cache read + cache write == prompt + completion + cache tokens
+	// that quota_data counts into TokenUsed.
+	InputTokens      int64 `json:"input_tokens"`
+	OutputTokens     int64 `json:"output_tokens"`
+	CacheReadTokens  int64 `json:"cache_read_tokens"`
+	CacheWriteTokens int64 `json:"cache_write_tokens"`
 }
 
 // GetChannelTokenTotals returns the cumulative token consumption of the given channels,
@@ -71,4 +81,83 @@ func GetChannelUsageTrend(channelID int, startTime int64, endTime int64, bucketS
 		Order("bucket ASC").
 		Find(&rows).Error
 	return rows, err
+}
+
+// splitLogTokens splits one consume log into input, output, cache-read and cache-write
+// tokens. Anthropic-style usage reports cache tokens next to the prompt; OpenAI-style usage
+// counts them inside the prompt, so they are carved out of it to keep the four parts
+// disjoint.
+func splitLogTokens(promptTokens int, completionTokens int, other string) (input, output, cacheRead, cacheWrite int64) {
+	var meta struct {
+		UsageSemantic       string `json:"usage_semantic"`
+		CacheTokens         any    `json:"cache_tokens"`
+		CacheCreationTokens any    `json:"cache_creation_tokens"`
+	}
+	if other != "" {
+		_ = common.UnmarshalJsonStr(other, &meta)
+	}
+	cacheRead = int64(logOtherInt(meta.CacheTokens))
+	cacheWrite = int64(logOtherInt(meta.CacheCreationTokens))
+	input = int64(max(promptTokens, 0))
+	if meta.UsageSemantic != "anthropic" {
+		input = max(input-cacheRead-cacheWrite, 0)
+	}
+	return input, int64(max(completionTokens, 0)), cacheRead, cacheWrite
+}
+
+// GetChannelTokenBreakdown splits one channel's consumed tokens over [startTime, endTime]
+// into input, output, cache-read and cache-write tokens per bucket (oldest first), read from
+// the usage logs. Only the four breakdown fields of the returned buckets are filled.
+func GetChannelTokenBreakdown(channelID int, startTime int64, endTime int64, bucketSize int64, offsetSeconds int64) ([]ChannelUsageBucket, error) {
+	if bucketSize <= 0 {
+		bucketSize = 3600
+	}
+	rows, err := LOG_DB.Table("logs").
+		Select("created_at, prompt_tokens, completion_tokens, other").
+		Where("type = ? AND channel_id = ?", LogTypeConsume, channelID).
+		Where("created_at >= ? AND created_at <= ?", startTime, endTime).
+		Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	byBucket := make(map[int64]*ChannelUsageBucket)
+	for rows.Next() {
+		var (
+			createdAt  int64
+			prompt     int
+			completion int
+			other      *string
+		)
+		if err := rows.Scan(&createdAt, &prompt, &completion, &other); err != nil {
+			return nil, err
+		}
+		shifted := createdAt + offsetSeconds
+		start := shifted - ((shifted%bucketSize)+bucketSize)%bucketSize - offsetSeconds
+		bucket, ok := byBucket[start]
+		if !ok {
+			bucket = &ChannelUsageBucket{Bucket: start}
+			byBucket[start] = bucket
+		}
+		otherJSON := ""
+		if other != nil {
+			otherJSON = *other
+		}
+		input, output, cacheRead, cacheWrite := splitLogTokens(prompt, completion, otherJSON)
+		bucket.InputTokens += input
+		bucket.OutputTokens += output
+		bucket.CacheReadTokens += cacheRead
+		bucket.CacheWriteTokens += cacheWrite
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	result := make([]ChannelUsageBucket, 0, len(byBucket))
+	for _, bucket := range byBucket {
+		result = append(result, *bucket)
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Bucket < result[j].Bucket })
+	return result, nil
 }

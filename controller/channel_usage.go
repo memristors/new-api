@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -121,6 +122,33 @@ func fillChannelUsageBuckets(rows []model.ChannelUsageBucket, r channelUsageRang
 	return filled
 }
 
+// mergeChannelUsageBreakdown adds the log-based token breakdown to the quota_data buckets.
+// A bucket present on only one side is kept as is.
+func mergeChannelUsageBreakdown(rows []model.ChannelUsageBucket, breakdown []model.ChannelUsageBucket) []model.ChannelUsageBucket {
+	if len(breakdown) == 0 {
+		return rows
+	}
+	byBucket := make(map[int64]model.ChannelUsageBucket, len(rows)+len(breakdown))
+	for _, row := range rows {
+		byBucket[row.Bucket] = row
+	}
+	for _, part := range breakdown {
+		row := byBucket[part.Bucket]
+		row.Bucket = part.Bucket
+		row.InputTokens = part.InputTokens
+		row.OutputTokens = part.OutputTokens
+		row.CacheReadTokens = part.CacheReadTokens
+		row.CacheWriteTokens = part.CacheWriteTokens
+		byBucket[part.Bucket] = row
+	}
+	merged := make([]model.ChannelUsageBucket, 0, len(byBucket))
+	for _, row := range byBucket {
+		merged = append(merged, row)
+	}
+	sort.Slice(merged, func(i, j int) bool { return merged[i].Bucket < merged[j].Bucket })
+	return merged
+}
+
 // GetChannelUsageTrend returns one channel's token consumption over time, for the trend
 // dialog of the channel list. Query: start_timestamp, end_timestamp, granularity=hour|day,
 // tz_offset (minutes east of UTC).
@@ -152,21 +180,38 @@ func GetChannelUsageTrend(c *gin.Context) {
 		return
 	}
 
-	var totalTokens, totalQuota, totalCount int64
+	// The input/output/cache split is read from the usage logs; without it the trend still
+	// works from the dashboard statistics alone.
+	breakdown, err := model.GetChannelTokenBreakdown(id, r.Start, r.End, r.BucketSize, r.OffsetSeconds)
+	if err != nil {
+		common.SysError(common.LogText("failed to get channel token breakdown: %s", err.Error()))
+	} else {
+		rows = mergeChannelUsageBreakdown(rows, breakdown)
+	}
+
+	var total model.ChannelUsageBucket
 	for _, row := range rows {
-		totalTokens += row.TokenUsed
-		totalQuota += row.Quota
-		totalCount += row.Count
+		total.TokenUsed += row.TokenUsed
+		total.Quota += row.Quota
+		total.Count += row.Count
+		total.InputTokens += row.InputTokens
+		total.OutputTokens += row.OutputTokens
+		total.CacheReadTokens += row.CacheReadTokens
+		total.CacheWriteTokens += row.CacheWriteTokens
 	}
 	common.ApiSuccess(c, gin.H{
-		"channel_id":      id,
-		"start_timestamp": r.Start,
-		"end_timestamp":   r.End,
-		"granularity":     r.Granularity,
-		"buckets":         fillChannelUsageBuckets(rows, r),
-		"total_tokens":    totalTokens,
-		"total_quota":     totalQuota,
-		"total_count":     totalCount,
+		"channel_id":               id,
+		"start_timestamp":          r.Start,
+		"end_timestamp":            r.End,
+		"granularity":              r.Granularity,
+		"buckets":                  fillChannelUsageBuckets(rows, r),
+		"total_tokens":             total.TokenUsed,
+		"total_quota":              total.Quota,
+		"total_count":              total.Count,
+		"total_input_tokens":       total.InputTokens,
+		"total_output_tokens":      total.OutputTokens,
+		"total_cache_read_tokens":  total.CacheReadTokens,
+		"total_cache_write_tokens": total.CacheWriteTokens,
 	})
 }
 

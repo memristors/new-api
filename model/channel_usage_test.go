@@ -75,3 +75,56 @@ func TestGetChannelUsageTrendAlignsDayBucketsToTheViewersMidnight(t *testing.T) 
 	require.NoError(t, err)
 	assert.NotEqual(t, rows, utc, "UTC day boundaries split the same traffic differently")
 }
+
+func seedConsumeLog(t *testing.T, createdAt int64, channelID int, prompt int, completion int, other string) {
+	t.Helper()
+	require.NoError(t, LOG_DB.Create(&Log{
+		Type:             LogTypeConsume,
+		CreatedAt:        createdAt,
+		ChannelId:        channelID,
+		PromptTokens:     prompt,
+		CompletionTokens: completion,
+		Other:            other,
+	}).Error)
+}
+
+func TestSplitLogTokensKeepsTheFourPartsDisjoint(t *testing.T) {
+	// Anthropic usage: the prompt excludes the cache, so the cache is added on top.
+	in, out, read, write := splitLogTokens(100, 20, `{"usage_semantic":"anthropic","cache_tokens":5000,"cache_creation_tokens":300}`)
+	assert.Equal(t, []int64{100, 20, 5000, 300}, []int64{in, out, read, write})
+	assert.Equal(t, int64(100+20+5000+300), in+out+read+write, "equals what quota_data counts as token_used")
+
+	// OpenAI usage: the prompt already contains the cached part, which is carved out of it.
+	in, out, read, write = splitLogTokens(1000, 50, `{"usage_semantic":"openai","cache_tokens":400}`)
+	assert.Equal(t, []int64{600, 50, 400, 0}, []int64{in, out, read, write})
+	assert.Equal(t, int64(1000+50), in+out+read+write)
+
+	// no metadata, bad JSON, or a cache larger than the prompt never goes negative
+	in, out, read, write = splitLogTokens(70, 5, "")
+	assert.Equal(t, []int64{70, 5, 0, 0}, []int64{in, out, read, write})
+	in, _, _, _ = splitLogTokens(70, 5, "not json")
+	assert.Equal(t, int64(70), in)
+	in, _, _, _ = splitLogTokens(10, 5, `{"cache_tokens":99}`)
+	assert.Equal(t, int64(0), in)
+}
+
+func TestGetChannelTokenBreakdownBucketsConsumeLogsOfTheChannel(t *testing.T) {
+	const h = int64(3600)
+	require.NoError(t, LOG_DB.Exec("DELETE FROM logs").Error)
+	t.Cleanup(func() { LOG_DB.Exec("DELETE FROM logs") })
+	anthropic := `{"usage_semantic":"anthropic","cache_tokens":1000,"cache_creation_tokens":10}`
+	seedConsumeLog(t, 10*h+5, 5, 100, 20, anthropic)
+	seedConsumeLog(t, 10*h+900, 5, 50, 5, "")
+	seedConsumeLog(t, 12*h, 5, 7, 3, "")
+	seedConsumeLog(t, 11*h, 6, 999, 999, "")  // other channel
+	seedConsumeLog(t, 40*h, 5, 888, 888, "")  // outside the range
+	require.NoError(t, LOG_DB.Create(&Log{Type: LogTypeError, CreatedAt: 10 * h, ChannelId: 5, PromptTokens: 777}).Error) // not a consume log
+
+	rows, err := GetChannelTokenBreakdown(5, 9*h, 20*h, h, 0)
+	require.NoError(t, err)
+	assert.Equal(t, []ChannelUsageBucket{
+		{Bucket: 10 * h, InputTokens: 150, OutputTokens: 25, CacheReadTokens: 1000, CacheWriteTokens: 10},
+		{Bucket: 12 * h, InputTokens: 7, OutputTokens: 3},
+	}, rows)
+}
+
