@@ -7266,6 +7266,25 @@
     "Zhipu": "智譜",
     "Zhipu GLM": "智譜GLM",
     "Zhipu V4": "智譜 V4",
-    "Zoom": "縮放"
+    "Zoom": "縮放",
+    "Tokens Used": "已消耗 Token",
+    "Consumption Trend": "消耗趨勢",
+    "Token consumption of channel:": "渠道 Token 消耗：",
+    "Failed to load consumption trend": "載入消耗趨勢失敗",
+    "View consumption trend": "查看消耗趨勢",
+    "Total tokens: {{tokens}}": "累計 Token：{{tokens}}",
+    "Click to view consumption trend": "點擊查看消耗趨勢",
+    "Last 24 hours": "近 24 小時",
+    "Last 3 days": "近 3 天",
+    "Last 7 days": "近 7 天",
+    "Last 30 days": "近 30 天",
+    "Last 90 days": "近 90 天",
+    "Start date": "開始日期",
+    "End date": "結束日期",
+    "Choose a valid start and end date": "請選擇有效的開始和結束日期",
+    "No consumption in this period": "該時間段內沒有消耗",
+    "Hourly buckets, shown in your local time.": "按小時統計，按你的本地時間顯示。",
+    "Daily buckets, shown in your local time.": "按天統計，按你的本地時間顯示。",
+    "Cache read and write tokens are included.": "已包含快取讀取和寫入的 Token。"
   }
 }

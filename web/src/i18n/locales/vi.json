@@ -7266,6 +7266,25 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Tokens Used": "Token đã dùng",
+    "Consumption Trend": "Xu hướng tiêu thụ",
+    "Token consumption of channel:": "Mức tiêu thụ token của kênh:",
+    "Failed to load consumption trend": "Không tải được xu hướng tiêu thụ",
+    "View consumption trend": "Xem xu hướng tiêu thụ",
+    "Total tokens: {{tokens}}": "Tổng token: {{tokens}}",
+    "Click to view consumption trend": "Nhấp để xem xu hướng tiêu thụ",
+    "Last 24 hours": "24 giờ qua",
+    "Last 3 days": "3 ngày qua",
+    "Last 7 days": "7 ngày qua",
+    "Last 30 days": "30 ngày qua",
+    "Last 90 days": "90 ngày qua",
+    "Start date": "Ngày bắt đầu",
+    "End date": "Ngày kết thúc",
+    "Choose a valid start and end date": "Hãy chọn ngày bắt đầu và kết thúc hợp lệ",
+    "No consumption in this period": "Không có mức tiêu thụ trong giai đoạn này",
+    "Hourly buckets, shown in your local time.": "Theo từng giờ, hiển thị theo giờ địa phương.",
+    "Daily buckets, shown in your local time.": "Theo từng ngày, hiển thị theo giờ địa phương.",
+    "Cache read and write tokens are included.": "Đã bao gồm token đọc và ghi bộ nhớ đệm."
   }
 }

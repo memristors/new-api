@@ -19,6 +19,12 @@ For commercial licensing, please contact support@quantumnous.com
 // Static translation keys that don't get picked up by the t('...') regex.
 // These cover dynamic labels (e.g. constants, configs) that are passed into t at runtime.
 export const STATIC_I18N_KEYS = [
+  // Channel consumption trend range presets (usage-trend.ts).
+  'Last 24 hours',
+  'Last 3 days',
+  'Last 7 days',
+  'Last 30 days',
+  'Last 90 days',
   'Task usage metadata is unavailable. Pricing details cannot be displayed.',
   'This expression cannot be expanded into a price table. View the original expression below.',
   'This operation is only supported for vLLM or SGLang channels',
