@@ -7266,6 +7266,25 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Tokens Used": "Tokens consommés",
+    "Consumption Trend": "Tendance de consommation",
+    "Token consumption of channel:": "Consommation de tokens du canal :",
+    "Failed to load consumption trend": "Échec du chargement de la tendance de consommation",
+    "View consumption trend": "Voir la tendance de consommation",
+    "Total tokens: {{tokens}}": "Total de tokens : {{tokens}}",
+    "Click to view consumption trend": "Cliquez pour voir la tendance de consommation",
+    "Last 24 hours": "24 dernières heures",
+    "Last 3 days": "3 derniers jours",
+    "Last 7 days": "7 derniers jours",
+    "Last 30 days": "30 derniers jours",
+    "Last 90 days": "90 derniers jours",
+    "Start date": "Date de début",
+    "End date": "Date de fin",
+    "Choose a valid start and end date": "Choisissez une date de début et de fin valides",
+    "No consumption in this period": "Aucune consommation sur cette période",
+    "Hourly buckets, shown in your local time.": "Par tranches horaires, en heure locale.",
+    "Daily buckets, shown in your local time.": "Par jour, en heure locale.",
+    "Cache read and write tokens are included.": "Les tokens de lecture et d’écriture du cache sont inclus."
   }
 }

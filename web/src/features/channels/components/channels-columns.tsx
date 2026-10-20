@@ -52,7 +52,11 @@ import {
   formatQuotaWithCurrency,
   getCurrencyLabel,
 } from '@/lib/currency'
-import { formatTimestampToDate } from '@/lib/format'
+import {
+  formatCompactNumber,
+  formatNumber,
+  formatTimestampToDate,
+} from '@/lib/format'
 import { handleServerError } from '@/lib/handle-server-error'
 import {
   createServerError,
@@ -334,6 +338,60 @@ function TagWeightCell({ channel }: { channel: TagRow }) {
  */
 const MAX_INLINE_BALANCE_CHARS = 8
 const SENSITIVE_MASK = '••••'
+
+/**
+ * Cumulative token consumption of a channel; click to open the consumption trend.
+ * Tag aggregate rows show the sum of their channels and are not clickable.
+ */
+export function UsedTokensCell({ channel }: { channel: Channel }) {
+  const { t, i18n } = useTranslation()
+  const { sensitiveVisible, setCurrentRow, setOpen } = useChannels()
+  const locale = toIntlLocale(i18n.resolvedLanguage || i18n.language)
+  const tokens = channel.used_tokens || 0
+  const display = sensitiveVisible
+    ? formatCompactNumber(tokens, locale)
+    : SENSITIVE_MASK
+
+  if (isTagAggregateRow(channel)) {
+    return <span className='text-sm tabular-nums'>{display}</span>
+  }
+
+  const handleOpenTrend = () => {
+    setCurrentRow(channel)
+    setOpen('usage-trend')
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant='ghost'
+              size='sm'
+              className='-ml-2 h-auto px-2 py-0.5 text-sm tabular-nums'
+              aria-haspopup='dialog'
+              aria-label={t('View consumption trend')}
+              onClick={handleOpenTrend}
+            >
+              {display}
+            </Button>
+          }
+        />
+        <TooltipContent>
+          {sensitiveVisible && (
+            <p>
+              {t('Total tokens: {{tokens}}', {
+                tokens: formatNumber(tokens, locale),
+              })}
+            </p>
+          )}
+          <p>{t('Click to view consumption trend')}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
 
 /**
  * Balance cell component with click to update
@@ -1178,6 +1236,16 @@ export function useChannelsColumns(
         header: t('Used / Remaining'),
         cell: ({ row }) => <BalanceCell channel={row.original} />,
         size: 180,
+      },
+
+      // Tokens consumed (cumulative); click to see the trend
+      {
+        accessorKey: 'used_tokens',
+        header: t('Tokens Used'),
+        meta: { mobileHidden: true },
+        cell: ({ row }) => <UsedTokensCell channel={row.original} />,
+        size: 110,
+        enableSorting: false,
       },
 
       // Response Time column

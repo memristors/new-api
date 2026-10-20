@@ -60,6 +60,7 @@ function channel(name: string): Channel {
     models: 'gpt-4o',
     group: 'vip',
     used_quota: 0,
+    used_tokens: 0,
     other_info: '',
     remark: '',
     max_input_tokens: 0,

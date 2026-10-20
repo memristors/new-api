@@ -53,6 +53,7 @@ export const channelSchema = z.object({
   models: z.string().default(''),
   group: z.string().default('default'),
   used_quota: z.number().default(0),
+  used_tokens: z.number().default(0), // cumulative tokens, computed server-side
   model_mapping: z.string().nullish(),
   status_code_mapping: z.string().nullish(),
   priority: z.number().nullish(),
@@ -172,6 +173,39 @@ export interface SearchChannelsResponse {
     items: Channel[]
     total: number
     type_counts?: Record<string, number>
+  }
+}
+
+export type ChannelUsageBucket = {
+  /** Start of the bucket, Unix seconds */
+  bucket: number
+  token_used: number
+  quota: number
+  count: number
+}
+
+export type ChannelUsageGranularity = 'hour' | 'day'
+
+export interface ChannelUsageTrendParams {
+  start_timestamp: number
+  end_timestamp: number
+  granularity?: ChannelUsageGranularity
+  /** Viewer's UTC offset in minutes, east positive */
+  tz_offset: number
+}
+
+export interface ChannelUsageTrendResponse {
+  success: boolean
+  message?: string
+  data?: {
+    channel_id: number
+    start_timestamp: number
+    end_timestamp: number
+    granularity: ChannelUsageGranularity
+    buckets: ChannelUsageBucket[]
+    total_tokens: number
+    total_quota: number
+    total_count: number
   }
 }
 

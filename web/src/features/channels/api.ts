@@ -29,6 +29,8 @@ import type {
   ChannelBalanceResponse,
   ChannelOpsResponse,
   ChannelTestResponse,
+  ChannelUsageTrendParams,
+  ChannelUsageTrendResponse,
   CopyChannelParams,
   CopyChannelResponse,
   FetchModelsResponse,
@@ -130,6 +132,17 @@ export async function searchChannels(
   params: SearchChannelsParams
 ): Promise<SearchChannelsResponse> {
   const res = await api.get('/api/channel/search', { params })
+  return res.data
+}
+
+/**
+ * Get the token consumption trend of one channel over a time range
+ */
+export async function getChannelUsageTrend(
+  id: number,
+  params: ChannelUsageTrendParams
+): Promise<ChannelUsageTrendResponse> {
+  const res = await api.get(`/api/channel/${id}/usage_trend`, { params })
   return res.data
 }
 

@@ -7266,6 +7266,25 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Tokens Used": "Израсходовано токенов",
+    "Consumption Trend": "Динамика потребления",
+    "Token consumption of channel:": "Расход токенов канала:",
+    "Failed to load consumption trend": "Не удалось загрузить динамику потребления",
+    "View consumption trend": "Показать динамику потребления",
+    "Total tokens: {{tokens}}": "Всего токенов: {{tokens}}",
+    "Click to view consumption trend": "Нажмите, чтобы посмотреть динамику потребления",
+    "Last 24 hours": "Последние 24 часа",
+    "Last 3 days": "Последние 3 дня",
+    "Last 7 days": "Последние 7 дней",
+    "Last 30 days": "Последние 30 дней",
+    "Last 90 days": "Последние 90 дней",
+    "Start date": "Дата начала",
+    "End date": "Дата окончания",
+    "Choose a valid start and end date": "Выберите корректные даты начала и окончания",
+    "No consumption in this period": "За этот период расхода нет",
+    "Hourly buckets, shown in your local time.": "По часам, в вашем местном времени.",
+    "Daily buckets, shown in your local time.": "По дням, в вашем местном времени.",
+    "Cache read and write tokens are included.": "Токены чтения и записи кеша учтены."
   }
 }

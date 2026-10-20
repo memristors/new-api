@@ -7266,6 +7266,25 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V 4",
-    "Zoom": "ズーム"
+    "Zoom": "ズーム",
+    "Tokens Used": "消費トークン",
+    "Consumption Trend": "消費トレンド",
+    "Token consumption of channel:": "チャネルのトークン消費：",
+    "Failed to load consumption trend": "消費トレンドの読み込みに失敗しました",
+    "View consumption trend": "消費トレンドを表示",
+    "Total tokens: {{tokens}}": "累計トークン：{{tokens}}",
+    "Click to view consumption trend": "クリックして消費トレンドを表示",
+    "Last 24 hours": "過去 24 時間",
+    "Last 3 days": "過去 3 日間",
+    "Last 7 days": "過去 7 日間",
+    "Last 30 days": "過去 30 日間",
+    "Last 90 days": "過去 90 日間",
+    "Start date": "開始日",
+    "End date": "終了日",
+    "Choose a valid start and end date": "有効な開始日と終了日を選択してください",
+    "No consumption in this period": "この期間の消費はありません",
+    "Hourly buckets, shown in your local time.": "1 時間単位、ローカル時間で表示。",
+    "Daily buckets, shown in your local time.": "1 日単位、ローカル時間で表示。",
+    "Cache read and write tokens are included.": "キャッシュの読み取り・書き込みトークンを含みます。"
   }
 }
