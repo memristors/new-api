@@ -47,12 +47,34 @@ function response(tokens: number) {
       end_timestamp: 0,
       granularity: 'hour' as const,
       buckets: [
-        { bucket: 3600, token_used: tokens, quota: 500000, count: 3 },
-        { bucket: 7200, token_used: 0, quota: 0, count: 0 },
+        {
+          bucket: 3600,
+          token_used: tokens,
+          quota: 500000,
+          count: 3,
+          input_tokens: Math.round(tokens * 0.1),
+          output_tokens: Math.round(tokens * 0.05),
+          cache_read_tokens: Math.round(tokens * 0.8),
+          cache_write_tokens: Math.round(tokens * 0.05),
+        },
+        {
+          bucket: 7200,
+          token_used: 0,
+          quota: 0,
+          count: 0,
+          input_tokens: 0,
+          output_tokens: 0,
+          cache_read_tokens: 0,
+          cache_write_tokens: 0,
+        },
       ],
       total_tokens: tokens,
       total_quota: 500000,
       total_count: 3,
+      total_input_tokens: Math.round(tokens * 0.1),
+      total_output_tokens: Math.round(tokens * 0.05),
+      total_cache_read_tokens: Math.round(tokens * 0.8),
+      total_cache_write_tokens: Math.round(tokens * 0.05),
     },
   }
 }
@@ -92,10 +114,22 @@ test('loads the last 24 hours and shows the totals', async () => {
   renderDialog()
 
   expect(await screen.findByText('1,234,567')).toBeTruthy()
+  expect(screen.getByText('1.23M')).toBeTruthy()
   const call = vi.mocked(getChannelUsageTrend).mock.calls[0]
   expect(call[0]).toBe(9)
   expect(call[1].end_timestamp - call[1].start_timestamp).toBe(24 * 3600)
   expect(call[1].tz_offset).toBe(-new Date().getTimezoneOffset() || 0)
+})
+
+test('splits the total into input, output and cache', async () => {
+  vi.mocked(getChannelUsageTrend).mockResolvedValue(response(1000000))
+  renderDialog()
+
+  expect(await screen.findByText('Cache read')).toBeTruthy()
+  expect(screen.getByText('Input')).toBeTruthy()
+  expect(screen.getByText('Output')).toBeTruthy()
+  expect(screen.getByText('Cache write')).toBeTruthy()
+  expect(screen.getByText('800,000 · 80%')).toBeTruthy()
 })
 
 test('picking another range queries that range', async () => {

@@ -32,13 +32,15 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { toIntlLocale } from '@/i18n/languages'
 import dayjs from '@/lib/dayjs'
-import { formatCompactNumber, formatNumber, formatQuota } from '@/lib/format'
+import { formatNumber, formatQuota } from '@/lib/format'
 import { handleServerError } from '@/lib/handle-server-error'
 import { createServerError } from '@/lib/server-error-message'
 
 import { getChannelUsageTrend } from '../../api'
 import {
   channelsQueryKeys,
+  formatShare,
+  formatTokenAmount,
   getViewerTzOffsetMinutes,
   resolveCustomRange,
   resolvePresetRange,
@@ -57,6 +59,12 @@ type ChannelUsageTrendDialogProps = {
 type PresetSelection = UsageTrendPresetKey | 'custom'
 
 const DEFAULT_PRESET_HOURS = 24
+const BREAKDOWN_SERIES = [
+  'input',
+  'output',
+  'cache_read',
+  'cache_write',
+] as const
 
 function toDayInputValue(unixSeconds: number): string {
   return dayjs.unix(unixSeconds).format('YYYY-MM-DD')
@@ -125,13 +133,32 @@ export function ChannelUsageTrendDialog(props: ChannelUsageTrendDialogProps) {
           .unix(bucket.bucket)
           .format(isHourly ? 'MM-DD HH:00' : 'MM-DD'),
         token_used: bucket.token_used,
+        input: bucket.input_tokens,
+        output: bucket.output_tokens,
+        cache_read: bucket.cache_read_tokens,
+        cache_write: bucket.cache_write_tokens,
       })),
     [data?.buckets, isHourly]
   )
 
+  const breakdownTotal =
+    totals.input + totals.output + totals.cacheRead + totals.cacheWrite
+  const hasBreakdown = breakdownTotal > 0
+
   const chartConfig = {
     token_used: { label: t('Tokens'), color: 'var(--chart-1)' },
+    input: { label: t('Input'), color: 'var(--chart-1)' },
+    output: { label: t('Output'), color: 'var(--chart-2)' },
+    cache_read: { label: t('Cache read'), color: 'var(--chart-3)' },
+    cache_write: { label: t('Cache write'), color: 'var(--chart-4)' },
   } satisfies ChartConfig
+
+  const breakdownItems = [
+    { key: 'input', label: t('Input'), value: totals.input },
+    { key: 'output', label: t('Output'), value: totals.output },
+    { key: 'cache_read', label: t('Cache read'), value: totals.cacheRead },
+    { key: 'cache_write', label: t('Cache write'), value: totals.cacheWrite },
+  ] as const
 
   const handleSelectPreset = (key: UsageTrendPresetKey, hours: number) => {
     const next = resolvePresetRange(hours)
@@ -237,15 +264,31 @@ export function ChannelUsageTrendDialog(props: ChannelUsageTrendDialogProps) {
 
       <div className='grid grid-cols-3 gap-3'>
         <SummaryItem
-          label={t('Tokens')}
-          value={formatNumber(totals.tokens, locale)}
+          label={t('Total tokens')}
+          value={formatTokenAmount(totals.tokens, locale)}
+          hint={formatNumber(totals.tokens, locale)}
         />
         <SummaryItem
           label={t('Requests')}
-          value={formatNumber(totals.count, locale)}
+          value={formatTokenAmount(totals.count, locale)}
+          hint={formatNumber(totals.count, locale)}
         />
         <SummaryItem label={t('Quota')} value={formatQuota(totals.quota)} />
       </div>
+
+      {hasBreakdown && (
+        <div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
+          {breakdownItems.map((item) => (
+            <SummaryItem
+              key={item.key}
+              label={item.label}
+              value={formatTokenAmount(item.value, locale)}
+              hint={`${formatNumber(item.value, locale)} · ${formatShare(item.value, breakdownTotal, locale)}`}
+              color={`var(--color-${item.key})`}
+            />
+          ))}
+        </div>
+      )}
 
       {isLoading && <Skeleton className='h-64 w-full' />}
 
@@ -267,25 +310,56 @@ export function ChannelUsageTrendDialog(props: ChannelUsageTrendDialogProps) {
               tickMargin={8}
             />
             <YAxis
-              width={48}
+              width={56}
               tickLine={false}
               axisLine={false}
               tickFormatter={(value: number) =>
-                formatCompactNumber(value, locale)
+                formatTokenAmount(value, locale)
               }
             />
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  formatter={(value) => formatNumber(Number(value), locale)}
+                  formatter={(value, name, item) => (
+                    <div className='flex w-full items-center justify-between gap-4'>
+                      <span className='flex items-center gap-1.5'>
+                        <span
+                          className='h-2 w-2 rounded-[2px]'
+                          style={{ backgroundColor: item.color }}
+                        />
+                        {chartConfig[name as keyof typeof chartConfig]?.label ??
+                          name}
+                      </span>
+                      <span className='font-mono tabular-nums'>
+                        {formatTokenAmount(Number(value), locale)}
+                        {Number(value) >= 10000 && (
+                          <span className='text-muted-foreground'>
+                            {' '}
+                            ({formatNumber(Number(value), locale)})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )}
                 />
               }
             />
-            <Bar
-              dataKey='token_used'
-              fill='var(--color-token_used)'
-              radius={2}
-            />
+            {hasBreakdown ? (
+              BREAKDOWN_SERIES.map((key) => (
+                <Bar
+                  key={key}
+                  dataKey={key}
+                  stackId='tokens'
+                  fill={`var(--color-${key})`}
+                />
+              ))
+            ) : (
+              <Bar
+                dataKey='token_used'
+                fill='var(--color-token_used)'
+                radius={2}
+              />
+            )}
           </BarChart>
         </ChartContainer>
       )}
@@ -295,20 +369,46 @@ export function ChannelUsageTrendDialog(props: ChannelUsageTrendDialogProps) {
           {isHourly
             ? t('Hourly buckets, shown in your local time.')
             : t('Daily buckets, shown in your local time.')}{' '}
-          {t('Cache read and write tokens are included.')}
+          {t('Total tokens include cache reads and writes.')}
+        </p>
+      )}
+
+      {hasBreakdown && breakdownTotal !== totals.tokens && (
+        <p className='text-muted-foreground text-xs'>
+          {t(
+            'The input/output/cache split comes from usage logs and may not cover the whole period.'
+          )}
         </p>
       )}
     </Dialog>
   )
 }
 
-function SummaryItem(props: { label: string; value: string }) {
+function SummaryItem(props: {
+  label: string
+  value: string
+  hint?: string
+  color?: string
+}) {
   return (
     <div className='bg-muted/50 rounded-lg border p-3'>
-      <div className='text-muted-foreground text-xs'>{props.label}</div>
+      <div className='text-muted-foreground flex items-center gap-1.5 text-xs'>
+        {props.color && (
+          <span
+            className='h-2 w-2 rounded-[2px]'
+            style={{ backgroundColor: props.color }}
+          />
+        )}
+        {props.label}
+      </div>
       <div className='mt-1 text-lg font-semibold tabular-nums'>
         {props.value}
       </div>
+      {props.hint && (
+        <div className='text-muted-foreground text-xs tabular-nums'>
+          {props.hint}
+        </div>
+      )}
     </div>
   )
 }

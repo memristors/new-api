@@ -7285,6 +7285,8 @@
     "No consumption in this period": "Aucune consommation sur cette période",
     "Hourly buckets, shown in your local time.": "Par tranches horaires, en heure locale.",
     "Daily buckets, shown in your local time.": "Par jour, en heure locale.",
-    "Cache read and write tokens are included.": "Les tokens de lecture et d’écriture du cache sont inclus."
+    "Cache read": "Lecture du cache",
+    "Total tokens include cache reads and writes.": "Le total inclut les lectures et écritures du cache.",
+    "The input/output/cache split comes from usage logs and may not cover the whole period.": "La répartition entrée/sortie/cache provient des journaux d’utilisation et peut ne pas couvrir toute la période."
   }
 }

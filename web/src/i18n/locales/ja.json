@@ -7285,6 +7285,8 @@
     "No consumption in this period": "この期間の消費はありません",
     "Hourly buckets, shown in your local time.": "1 時間単位、ローカル時間で表示。",
     "Daily buckets, shown in your local time.": "1 日単位、ローカル時間で表示。",
-    "Cache read and write tokens are included.": "キャッシュの読み取り・書き込みトークンを含みます。"
+    "Cache read": "キャッシュ読み取り",
+    "Total tokens include cache reads and writes.": "合計にはキャッシュの読み取りと書き込みが含まれます。",
+    "The input/output/cache split comes from usage logs and may not cover the whole period.": "入力/出力/キャッシュの内訳は使用ログに基づくため、期間全体を網羅していない場合があります。"
   }
 }

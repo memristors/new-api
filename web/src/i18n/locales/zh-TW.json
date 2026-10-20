@@ -7285,6 +7285,8 @@
     "No consumption in this period": "該時間段內沒有消耗",
     "Hourly buckets, shown in your local time.": "按小時統計，按你的本地時間顯示。",
     "Daily buckets, shown in your local time.": "按天統計，按你的本地時間顯示。",
-    "Cache read and write tokens are included.": "已包含快取讀取和寫入的 Token。"
+    "Cache read": "快取讀取",
+    "Total tokens include cache reads and writes.": "總 Token 包含快取讀取和寫入。",
+    "The input/output/cache split comes from usage logs and may not cover the whole period.": "輸入/輸出/快取的拆分來自使用日誌，可能不涵蓋整個時間段。"
   }
 }

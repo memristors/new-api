@@ -38,16 +38,16 @@ func TestResolveChannelUsageRangePicksGranularityFromTheSpan(t *testing.T) {
 func TestResolveChannelUsageRangeRejectsBadInput(t *testing.T) {
 	const now = int64(1_800_000_000)
 	cases := map[string][4]string{
-		"start after end":        {"1800000000", "1700000000", "", ""},
-		"start equals end":       {"1700000000", "1700000000", "", ""},
-		"non numeric start":      {"yesterday", "", "", ""},
-		"non numeric end":        {"", "now", "", ""},
-		"negative start":         {"-5", "", "", ""},
-		"range over 400 days":    {"1700000000", "1800000000", "day", ""},
-		"unknown granularity":    {"", "", "minute", ""},
-		"timezone out of range":  {"", "", "", "900"},
-		"timezone not a number":  {"", "", "", "+8h"},
-		"hourly over 41 days":    {"1790000000", "1800000000", "hour", ""},
+		"start after end":       {"1800000000", "1700000000", "", ""},
+		"start equals end":      {"1700000000", "1700000000", "", ""},
+		"non numeric start":     {"yesterday", "", "", ""},
+		"non numeric end":       {"", "now", "", ""},
+		"negative start":        {"-5", "", "", ""},
+		"range over 400 days":   {"1700000000", "1800000000", "day", ""},
+		"unknown granularity":   {"", "", "minute", ""},
+		"timezone out of range": {"", "", "", "900"},
+		"timezone not a number": {"", "", "", "+8h"},
+		"hourly over 41 days":   {"1790000000", "1800000000", "hour", ""},
 	}
 	for name, in := range cases {
 		_, err := resolveChannelUsageRange(in[0], in[1], in[2], in[3], now)
@@ -92,4 +92,23 @@ func TestFillChannelUsageBucketsAlignsTheFirstBucketToTheViewersDay(t *testing.T
 	}
 	assert.LessOrEqual(t, got[0].Bucket, r.Start)
 	assert.Greater(t, got[0].Bucket+day, r.Start, "the first bucket contains the start of the range")
+}
+
+func TestMergeChannelUsageBreakdownCombinesBothSources(t *testing.T) {
+	const h = int64(3600)
+	stats := []model.ChannelUsageBucket{
+		{Bucket: 1 * h, TokenUsed: 100, Quota: 5, Count: 2},
+		{Bucket: 2 * h, TokenUsed: 40, Quota: 1, Count: 1},
+	}
+	logs := []model.ChannelUsageBucket{
+		{Bucket: 1 * h, InputTokens: 60, OutputTokens: 10, CacheReadTokens: 30},
+		{Bucket: 3 * h, InputTokens: 4}, // only in the logs
+	}
+	got := mergeChannelUsageBreakdown(stats, logs)
+	require.Len(t, got, 3)
+	assert.Equal(t, model.ChannelUsageBucket{Bucket: 1 * h, TokenUsed: 100, Quota: 5, Count: 2, InputTokens: 60, OutputTokens: 10, CacheReadTokens: 30}, got[0])
+	assert.Equal(t, model.ChannelUsageBucket{Bucket: 2 * h, TokenUsed: 40, Quota: 1, Count: 1}, got[1], "no logs for that hour")
+	assert.Equal(t, int64(4), got[2].InputTokens)
+
+	assert.Equal(t, stats, mergeChannelUsageBreakdown(stats, nil), "without logs the statistics pass through")
 }
