@@ -86,17 +86,65 @@ export function resolveCustomRange(
   return start < end ? { start, end } : null
 }
 
-export function sumUsageBuckets(buckets: ChannelUsageBucket[]): {
+export type UsageTotals = {
   tokens: number
   quota: number
   count: number
-} {
-  return buckets.reduce(
+  input: number
+  output: number
+  cacheRead: number
+  cacheWrite: number
+}
+
+export function sumUsageBuckets(buckets: ChannelUsageBucket[]): UsageTotals {
+  return buckets.reduce<UsageTotals>(
     (sum, bucket) => ({
       tokens: sum.tokens + bucket.token_used,
       quota: sum.quota + bucket.quota,
       count: sum.count + bucket.count,
+      input: sum.input + (bucket.input_tokens || 0),
+      output: sum.output + (bucket.output_tokens || 0),
+      cacheRead: sum.cacheRead + (bucket.cache_read_tokens || 0),
+      cacheWrite: sum.cacheWrite + (bucket.cache_write_tokens || 0),
     }),
-    { tokens: 0, quota: 0, count: 0 }
+    {
+      tokens: 0,
+      quota: 0,
+      count: 0,
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+    }
   )
+}
+
+/**
+ * Token amount for people: small values keep every digit, large ones use the locale's own
+ * units (138.89M in English, 1.39亿 in Chinese) so the magnitude reads at a glance.
+ */
+export function formatTokenAmount(value: number, locale?: string): string {
+  if (!Number.isFinite(value)) return '-'
+  if (Math.abs(value) < 10000) {
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(
+      value
+    )
+  }
+  return new Intl.NumberFormat(locale, {
+    notation: 'compact',
+    maximumFractionDigits: 2,
+  }).format(value)
+}
+
+/** Share of `part` in `whole` as a percentage string, e.g. "93.4%"; "-" without a whole. */
+export function formatShare(
+  part: number,
+  whole: number,
+  locale?: string
+): string {
+  if (!whole) return '-'
+  return new Intl.NumberFormat(locale, {
+    style: 'percent',
+    maximumFractionDigits: 1,
+  }).format(part / whole)
 }

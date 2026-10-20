@@ -7285,6 +7285,8 @@
     "No consumption in this period": "No consumption in this period",
     "Hourly buckets, shown in your local time.": "Hourly buckets, shown in your local time.",
     "Daily buckets, shown in your local time.": "Daily buckets, shown in your local time.",
-    "Cache read and write tokens are included.": "Cache read and write tokens are included."
+    "Cache read": "Cache read",
+    "Total tokens include cache reads and writes.": "Total tokens include cache reads and writes.",
+    "The input/output/cache split comes from usage logs and may not cover the whole period.": "The input/output/cache split comes from usage logs and may not cover the whole period."
   }
 }

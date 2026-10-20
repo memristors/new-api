@@ -38,16 +38,16 @@ func TestResolveChannelUsageRangePicksGranularityFromTheSpan(t *testing.T) {
 func TestResolveChannelUsageRangeRejectsBadInput(t *testing.T) {
 	const now = int64(1_800_000_000)
 	cases := map[string][4]string{
-		"start after end":        {"1800000000", "1700000000", "", ""},
-		"start equals end":       {"1700000000", "1700000000", "", ""},
-		"non numeric start":      {"yesterday", "", "", ""},
-		"non numeric end":        {"", "now", "", ""},
-		"negative start":         {"-5", "", "", ""},
-		"range over 400 days":    {"1700000000", "1800000000", "day", ""},
-		"unknown granularity":    {"", "", "minute", ""},
-		"timezone out of range":  {"", "", "", "900"},
-		"timezone not a number":  {"", "", "", "+8h"},
-		"hourly over 41 days":    {"1790000000", "1800000000", "hour", ""},
+		"start after end":       {"1800000000", "1700000000", "", ""},
+		"start equals end":      {"1700000000", "1700000000", "", ""},
+		"non numeric start":     {"yesterday", "", "", ""},
+		"non numeric end":       {"", "now", "", ""},
+		"negative start":        {"-5", "", "", ""},
+		"range over 400 days":   {"1700000000", "1800000000", "day", ""},
+		"unknown granularity":   {"", "", "minute", ""},
+		"timezone out of range": {"", "", "", "900"},
+		"timezone not a number": {"", "", "", "+8h"},
+		"hourly over 41 days":   {"1790000000", "1800000000", "hour", ""},
 	}
 	for name, in := range cases {
 		_, err := resolveChannelUsageRange(in[0], in[1], in[2], in[3], now)
@@ -112,4 +112,3 @@ func TestMergeChannelUsageBreakdownCombinesBothSources(t *testing.T) {
 
 	assert.Equal(t, stats, mergeChannelUsageBreakdown(stats, nil), "without logs the statistics pass through")
 }
-

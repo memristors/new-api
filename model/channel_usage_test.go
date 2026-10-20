@@ -37,10 +37,10 @@ func TestGetChannelUsageTrendBucketsByHourOnlyForTheChannelAndRange(t *testing.T
 	const h = int64(3600)
 	seedQuotaData(t, []QuotaData{
 		{UserID: 1, Username: "a", ModelName: "m1", CreatedAt: 10 * h, ChannelID: 5, TokenUsed: 100, Quota: 10, Count: 1},
-		{UserID: 2, Username: "b", ModelName: "m2", CreatedAt: 10 * h, ChannelID: 5, TokenUsed: 50, Quota: 5, Count: 2}, // same hour, other user and model
+		{UserID: 2, Username: "b", ModelName: "m2", CreatedAt: 10 * h, ChannelID: 5, TokenUsed: 50, Quota: 5, Count: 2},
 		{UserID: 1, Username: "a", ModelName: "m1", CreatedAt: 12 * h, ChannelID: 5, TokenUsed: 70, Quota: 7, Count: 1},
-		{UserID: 1, Username: "a", ModelName: "m1", CreatedAt: 11 * h, ChannelID: 6, TokenUsed: 999, Quota: 99, Count: 9}, // other channel
-		{UserID: 1, Username: "a", ModelName: "m1", CreatedAt: 40 * h, ChannelID: 5, TokenUsed: 888, Quota: 88, Count: 8}, // outside the range
+		{UserID: 1, Username: "a", ModelName: "m1", CreatedAt: 11 * h, ChannelID: 6, TokenUsed: 999, Quota: 99, Count: 9},
+		{UserID: 1, Username: "a", ModelName: "m1", CreatedAt: 40 * h, ChannelID: 5, TokenUsed: 888, Quota: 88, Count: 8},
 	})
 
 	rows, err := GetChannelUsageTrend(5, 9*h, 20*h, h, 0)
@@ -58,10 +58,10 @@ func TestGetChannelUsageTrendAlignsDayBucketsToTheViewersMidnight(t *testing.T) 
 	offset := 8 * h
 	localMidnight := 5*day - offset // local day starting at 2026-ish "day 5" in the viewer's calendar
 	seedQuotaData(t, []QuotaData{
-		{UserID: 1, Username: "a", ModelName: "m", CreatedAt: localMidnight + 1*h, ChannelID: 3, TokenUsed: 10, Count: 1},   // first hour of the local day
-		{UserID: 1, Username: "a", ModelName: "m", CreatedAt: localMidnight + 23*h, ChannelID: 3, TokenUsed: 20, Count: 1},  // last hour of the same local day
-		{UserID: 1, Username: "a", ModelName: "m", CreatedAt: localMidnight + 24*h, ChannelID: 3, TokenUsed: 40, Count: 1},  // next local day
-		{UserID: 1, Username: "a", ModelName: "m", CreatedAt: localMidnight - 1*h, ChannelID: 3, TokenUsed: 5, Count: 1},    // previous local day
+		{UserID: 1, Username: "a", ModelName: "m", CreatedAt: localMidnight + 1*h, ChannelID: 3, TokenUsed: 10, Count: 1},
+		{UserID: 1, Username: "a", ModelName: "m", CreatedAt: localMidnight + 23*h, ChannelID: 3, TokenUsed: 20, Count: 1},
+		{UserID: 1, Username: "a", ModelName: "m", CreatedAt: localMidnight + 24*h, ChannelID: 3, TokenUsed: 40, Count: 1},
+		{UserID: 1, Username: "a", ModelName: "m", CreatedAt: localMidnight - 1*h, ChannelID: 3, TokenUsed: 5, Count: 1},
 	})
 
 	rows, err := GetChannelUsageTrend(3, localMidnight-2*day, localMidnight+3*day, day, offset)
@@ -116,9 +116,9 @@ func TestGetChannelTokenBreakdownBucketsConsumeLogsOfTheChannel(t *testing.T) {
 	seedConsumeLog(t, 10*h+5, 5, 100, 20, anthropic)
 	seedConsumeLog(t, 10*h+900, 5, 50, 5, "")
 	seedConsumeLog(t, 12*h, 5, 7, 3, "")
-	seedConsumeLog(t, 11*h, 6, 999, 999, "")  // other channel
-	seedConsumeLog(t, 40*h, 5, 888, 888, "")  // outside the range
-	require.NoError(t, LOG_DB.Create(&Log{Type: LogTypeError, CreatedAt: 10 * h, ChannelId: 5, PromptTokens: 777}).Error) // not a consume log
+	seedConsumeLog(t, 11*h, 6, 999, 999, "")
+	seedConsumeLog(t, 40*h, 5, 888, 888, "")
+	require.NoError(t, LOG_DB.Create(&Log{Type: LogTypeError, CreatedAt: 10 * h, ChannelId: 5, PromptTokens: 777}).Error)
 
 	rows, err := GetChannelTokenBreakdown(5, 9*h, 20*h, h, 0)
 	require.NoError(t, err)
@@ -127,4 +127,3 @@ func TestGetChannelTokenBreakdownBucketsConsumeLogsOfTheChannel(t *testing.T) {
 		{Bucket: 12 * h, InputTokens: 7, OutputTokens: 3},
 	}, rows)
 }
-

@@ -7285,6 +7285,8 @@
     "No consumption in this period": "За этот период расхода нет",
     "Hourly buckets, shown in your local time.": "По часам, в вашем местном времени.",
     "Daily buckets, shown in your local time.": "По дням, в вашем местном времени.",
-    "Cache read and write tokens are included.": "Токены чтения и записи кеша учтены."
+    "Cache read": "Чтение кеша",
+    "Total tokens include cache reads and writes.": "В общую сумму входят чтение и запись кеша.",
+    "The input/output/cache split comes from usage logs and may not cover the whole period.": "Разбивка на вход/выход/кеш основана на журналах использования и может не охватывать весь период."
   }
 }

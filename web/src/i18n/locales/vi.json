@@ -7285,6 +7285,8 @@
     "No consumption in this period": "Không có mức tiêu thụ trong giai đoạn này",
     "Hourly buckets, shown in your local time.": "Theo từng giờ, hiển thị theo giờ địa phương.",
     "Daily buckets, shown in your local time.": "Theo từng ngày, hiển thị theo giờ địa phương.",
-    "Cache read and write tokens are included.": "Đã bao gồm token đọc và ghi bộ nhớ đệm."
+    "Cache read": "Đọc bộ nhớ đệm",
+    "Total tokens include cache reads and writes.": "Tổng token đã bao gồm đọc và ghi bộ nhớ đệm.",
+    "The input/output/cache split comes from usage logs and may not cover the whole period.": "Phần chia đầu vào/đầu ra/bộ nhớ đệm lấy từ nhật ký sử dụng và có thể không bao phủ toàn bộ giai đoạn."
   }
 }

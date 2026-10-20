@@ -182,6 +182,11 @@ export type ChannelUsageBucket = {
   token_used: number
   quota: number
   count: number
+  /** Split of the tokens, from the usage logs (0 when the logs are gone) */
+  input_tokens: number
+  output_tokens: number
+  cache_read_tokens: number
+  cache_write_tokens: number
 }
 
 export type ChannelUsageGranularity = 'hour' | 'day'
@@ -206,6 +211,10 @@ export interface ChannelUsageTrendResponse {
     total_tokens: number
     total_quota: number
     total_count: number
+    total_input_tokens: number
+    total_output_tokens: number
+    total_cache_read_tokens: number
+    total_cache_write_tokens: number
   }
 }
 

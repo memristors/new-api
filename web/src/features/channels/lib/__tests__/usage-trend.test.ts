@@ -20,6 +20,8 @@ import { describe, expect, test } from 'vitest'
 
 import type { ChannelUsageBucket } from '../../types'
 import {
+  formatShare,
+  formatTokenAmount,
   getViewerTzOffsetMinutes,
   resolveCustomRange,
   resolvePresetRange,
@@ -66,13 +68,72 @@ describe('getViewerTzOffsetMinutes', () => {
 })
 
 describe('sumUsageBuckets', () => {
-  test('adds tokens, quota and request counts', () => {
+  test('adds tokens, quota, requests and the token split', () => {
     const buckets: ChannelUsageBucket[] = [
-      { bucket: 0, token_used: 10, quota: 2, count: 1 },
-      { bucket: 3600, token_used: 0, quota: 0, count: 0 },
-      { bucket: 7200, token_used: 30, quota: 5, count: 4 },
+      {
+        bucket: 0,
+        token_used: 10,
+        quota: 2,
+        count: 1,
+        input_tokens: 3,
+        output_tokens: 2,
+        cache_read_tokens: 4,
+        cache_write_tokens: 1,
+      },
+      {
+        bucket: 3600,
+        token_used: 0,
+        quota: 0,
+        count: 0,
+        input_tokens: 0,
+        output_tokens: 0,
+        cache_read_tokens: 0,
+        cache_write_tokens: 0,
+      },
+      {
+        bucket: 7200,
+        token_used: 30,
+        quota: 5,
+        count: 4,
+        input_tokens: 10,
+        output_tokens: 5,
+        cache_read_tokens: 14,
+        cache_write_tokens: 1,
+      },
     ]
-    expect(sumUsageBuckets(buckets)).toEqual({ tokens: 40, quota: 7, count: 5 })
-    expect(sumUsageBuckets([])).toEqual({ tokens: 0, quota: 0, count: 0 })
+    expect(sumUsageBuckets(buckets)).toEqual({
+      tokens: 40,
+      quota: 7,
+      count: 5,
+      input: 13,
+      output: 7,
+      cacheRead: 18,
+      cacheWrite: 2,
+    })
+    expect(sumUsageBuckets([]).tokens).toBe(0)
+  })
+})
+
+describe('formatTokenAmount', () => {
+  test('keeps small numbers exact and shortens large ones by magnitude', () => {
+    expect(formatTokenAmount(950, 'en')).toBe('950')
+    expect(formatTokenAmount(138891589, 'en')).toBe('138.89M')
+    expect(formatTokenAmount(2_500_000_000, 'en')).toBe('2.5B')
+  })
+
+  test('uses the locale own units', () => {
+    expect(formatTokenAmount(138891589, 'zh-CN')).toContain('亿')
+    expect(formatTokenAmount(52_000_000, 'zh-CN')).toContain('万')
+  })
+
+  test('does not blow up on non-finite input', () => {
+    expect(formatTokenAmount(Number.NaN, 'en')).toBe('-')
+  })
+})
+
+describe('formatShare', () => {
+  test('is a percentage of the whole, or a dash without one', () => {
+    expect(formatShare(25, 200, 'en')).toBe('12.5%')
+    expect(formatShare(5, 0, 'en')).toBe('-')
   })
 })

@@ -39,7 +39,6 @@ type Channel struct {
 	Models             string  `json:"models"`
 	Group              string  `json:"group" gorm:"type:varchar(64);default:'default'"`
 	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
-	// UsedTokens is the cumulative token consumption (computed from quota_data, not stored in channels).
 	UsedTokens         int64   `json:"used_tokens" gorm:"-"`
 	ModelMapping       *string `json:"model_mapping" gorm:"type:text"`
 	//MaxInputTokens     *int    `json:"max_input_tokens" gorm:"default:0"`
